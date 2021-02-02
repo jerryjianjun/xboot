@@ -47,7 +47,7 @@ void xboot_main(void)
 	do_init_setting();
 
 	/* Do show logo */
-	do_show_logo();
+//	do_show_logo();
 
 	/* Do play audio */
 	do_play_audio();

@@ -6559,12 +6559,12 @@ int main(int argc, char *argv[])
 		//infree_clear_screen(0x00, 0x00, 0xff);
 		
 		//infree_clear_screen(0x00, 0x00, 0x00);
-		//infree_blit_jpg((uint8_t *)welcom_jpg, sizeof(welcom_jpg));
+		infree_blit_jpg((uint8_t *)welcom_jpg, sizeof(welcom_jpg));
 		
 		//infree_clear_screen(0x00, 0x00, 0x00);
-		//infree_blit_png((uint8_t *)welcom_png, sizeof(welcom_png));
+		infree_blit_png((uint8_t *)welcom_png, sizeof(welcom_png));
 		
-		infree_reboot_to_fel();
+		//infree_reboot_to_fel();
 	}
 	serial_close(fd);
 

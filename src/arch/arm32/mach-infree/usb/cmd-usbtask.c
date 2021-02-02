@@ -8,6 +8,7 @@
 #include <pngstruct.h>
 #include <jpeglib.h>
 #include <jerror.h>
+#include <init.h>
 #include <watchdog/watchdog.h>
 #include <command/command.h>
 
@@ -317,6 +318,14 @@ static uint32_t to_value32(uint8_t * buf)
 	return val;
 }
 
+static void to_buffer32(uint32_t val, uint8_t * buf)
+{
+	buf[0] = (val >> 24) & 0xff;
+	buf[1] = (val >> 16) & 0xff;
+	buf[2] = (val >>  8) & 0xff;
+	buf[3] = (val >>  0) & 0xff;
+}
+
 enum com_state_t {
 	COM_STATE_HEADER	= 0,
 	COM_STATE_LENGTH0	= 1,
@@ -340,7 +349,7 @@ static uint8_t * buffer = NULL;
 static struct fifo_t * fifo = NULL;
 
 extern int usb_device_write_data(int ep,unsigned char * databuf,int len);
-void com_ack(void)
+static void com_ack(void)
 {
 	uint8_t ack = 0x58;
 	usb_device_write_data(1, &ack, 1);
@@ -426,22 +435,100 @@ static void usage(void)
 
 static uint8_t tmp[SZ_2M];
 
+struct saving_t {
+	struct timer_t timer;
+	uint8_t buf[SZ_2M];
+	int dirty;
+	spinlock_t lock;
+};
+static struct saving_t __saving = { 0 };
+
+static int usbtask_show_logo(void)
+{
+	struct block_t * blk = search_block("blk-spinor.0");
+	int len;
+
+	if(blk)
+	{
+		if(block_read(blk, (u8_t *)__saving.buf, 0x00400000, 8) == 8)
+		{
+			if(__saving.buf[0] == 0x58)
+			{
+				len = to_value32(&__saving.buf[4]);
+				if(len > 0 && len < SZ_2M)
+				{
+					block_read(blk, (u8_t *)&__saving.buf[8], 0x00400000 + 8, len);
+					if((__saving.buf[1] == 'J') && (__saving.buf[2] == 'P') && (__saving.buf[3] == 'G'))
+					{
+						struct surface_t * jpg = surface_alloc_from_buffer_jpg(&__saving.buf[8], len);
+						if(jpg)
+						{
+							struct matrix_t m;
+							matrix_init_identity(&m);
+							matrix_init_translate(&m, (surface_get_width(screen) - surface_get_width(jpg)) / 2, (surface_get_height(screen) - surface_get_height(jpg)) / 2);
+							surface_blit(screen, NULL, &m, jpg, RENDER_TYPE_GOOD);
+							framebuffer_present_surface(fb, screen, NULL);
+							surface_free(jpg);
+							return 1;
+						}
+					}
+					else if((__saving.buf[1] == 'P') && (__saving.buf[2] == 'N') && (__saving.buf[3] == 'G'))
+					{
+						struct surface_t * png = surface_alloc_from_buffer_png(&__saving.buf[8], len);
+						if(png)
+						{
+							struct matrix_t m;
+							matrix_init_identity(&m);
+							matrix_init_translate(&m, (surface_get_width(screen) - surface_get_width(png)) / 2, (surface_get_height(screen) - surface_get_height(png)) / 2);
+							surface_blit(screen, NULL, &m, png, RENDER_TYPE_GOOD);
+							framebuffer_present_surface(fb, screen, NULL);
+							surface_free(png);
+							return 1;
+						}
+					}
+				}
+			}
+		}
+	}
+	return 0;
+}
+
+static int saving_timer_function(struct timer_t * timer, void * data)
+{
+	irq_flags_t flags;
+
+	if(__saving.dirty)
+	{
+		spin_lock_irqsave(&__saving.lock, flags);
+		uint32_t len = to_value32(&__saving.buf[4]);
+		watchdog_set_timeout(search_first_watchdog(), 10);
+		block_write(search_block("blk-spinor.0"), (u8_t *)__saving.buf, 0x00400000, 8 + len);
+		__saving.dirty = 0;
+		spin_unlock_irqrestore(&__saving.lock, flags);
+	}
+	return 0;
+}
+
 void usb_task(struct task_t * task, void * data)
 {
 	struct watchdog_t * wdg = search_first_watchdog();
 	uint8_t hbuf[5];
 	uint32_t len;
+	irq_flags_t flags;
 
-	if(!buffer)
-		buffer = malloc(SZ_2M);
-	if(!fifo)
-		fifo = fifo_alloc(SZ_4M);
-	if(!fb)
-	{
-		fb = search_first_framebuffer();
-		screen = framebuffer_create_surface(fb);
-	}
+	timer_init(&__saving.timer, saving_timer_function, NULL);
+	spin_lock_init(&__saving.lock);
+
+	buffer = malloc(SZ_2M);
+	fifo = fifo_alloc(SZ_4M);
+	fb = search_first_framebuffer();
+	screen = framebuffer_create_surface(fb);
+
 	usb_device_init(USB_TYPE_USB_COM);
+
+	if(!usbtask_show_logo())
+		do_show_logo();
+	framebuffer_set_backlight(fb, (1000 * 633) >> 10);
 
 	while(1)
 	{
@@ -483,6 +570,17 @@ void usb_task(struct task_t * task, void * data)
 								framebuffer_present_surface(fb, screen, NULL);
 								surface_free(jpg);
 								com_ack();
+
+								__saving.buf[0] = 0x58;
+								__saving.buf[1] = 'J';
+								__saving.buf[2] = 'P';
+								__saving.buf[3] = 'G';
+								to_buffer32(len - 2, &__saving.buf[4]);
+								memcpy(&__saving.buf[8], &tmp[1], len - 2);
+								spin_lock_irqsave(&__saving.lock, flags);
+								__saving.dirty = 1;
+								timer_start_now(&__saving.timer, ms_to_ktime(10000));
+								spin_unlock_irqrestore(&__saving.lock, flags);
 							}
 						}
 						break;
@@ -499,6 +597,17 @@ void usb_task(struct task_t * task, void * data)
 								framebuffer_present_surface(fb, screen, NULL);
 								surface_free(png);
 								com_ack();
+
+								__saving.buf[0] = 0x58;
+								__saving.buf[1] = 'P';
+								__saving.buf[2] = 'N';
+								__saving.buf[3] = 'G';
+								to_buffer32(len - 2, &__saving.buf[4]);
+								memcpy(&__saving.buf[8], &tmp[1], len - 2);
+								spin_lock_irqsave(&__saving.lock, flags);
+								__saving.dirty = 1;
+								timer_start_now(&__saving.timer, ms_to_ktime(10000));
+								spin_unlock_irqrestore(&__saving.lock, flags);
 							}
 						}
 						break;
@@ -507,9 +616,13 @@ void usb_task(struct task_t * task, void * data)
 						{
 							if((tmp[1] == 'F') && (tmp[2] == 'E') && (tmp[3] == 'L'))
 							{
+								uint8_t zero[16];
+								memset(zero, 0, sizeof(zero));
+								block_write(search_block("blk-spinor.0"), zero, 0, sizeof(zero));
 								com_ack();
+
 								machine_reboot();
-								mdelay(5000);
+								mdelay(4000);
 							}
 						}
 						break;
@@ -524,7 +637,7 @@ void usb_task(struct task_t * task, void * data)
 				fifo_reset(fifo);
 			}
 		}
-		//watchdog_set_timeout(wdg, 10);
+		watchdog_set_timeout(wdg, 10);
 		task_yield();
 	}
 }
