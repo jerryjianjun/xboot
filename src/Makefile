@@ -5,13 +5,13 @@
 #
 # You can pass CROSS_COMPILE and PLATFORM variable.
 #
-CROSS_COMPILE	?=
-PLATFORM		?=
+CROSS_COMPILE	?= arm-none-eabi-
+PLATFORM		?= arm32-infree
 
 #
 # Configurable advanced custom components
 #
-CFG_FRAMEWORK	?= y
+CFG_FRAMEWORK	?= n
 CFG_CAIRO		?= y
 CFG_WBOXTEST 	?= n
 
