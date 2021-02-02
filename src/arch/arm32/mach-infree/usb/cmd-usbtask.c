@@ -455,7 +455,10 @@ void usb_task(struct task_t * task, void * data)
 					switch(tmp[0])
 					{
 					case CMD_SET_BRIGHTNESS:
-						framebuffer_set_backlight(fb, (int)tmp[1] * 1000 / 255);
+						{
+							framebuffer_set_backlight(fb, (int)tmp[1] * 1000 / 255);
+							com_ack();
+						}
 						break;
 
 					case CMD_CLEAR_SCREEN:
@@ -479,6 +482,7 @@ void usb_task(struct task_t * task, void * data)
 								surface_blit(screen, NULL, &m, jpg, RENDER_TYPE_GOOD);
 								framebuffer_present_surface(fb, screen, NULL);
 								surface_free(jpg);
+								com_ack();
 							}
 						}
 						break;
@@ -494,11 +498,20 @@ void usb_task(struct task_t * task, void * data)
 								surface_blit(screen, NULL, &m, png, RENDER_TYPE_GOOD);
 								framebuffer_present_surface(fb, screen, NULL);
 								surface_free(png);
+								com_ack();
 							}
 						}
 						break;
 
 					case CMD_REBOOT_TO_FEL:
+						{
+							if((tmp[1] == 'F') && (tmp[2] == 'E') && (tmp[3] == 'L'))
+							{
+								com_ack();
+								machine_reboot();
+								mdelay(5000);
+							}
+						}
 						break;
 
 					default:

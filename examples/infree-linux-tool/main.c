@@ -6378,6 +6378,8 @@ uint64_t get_current_time(void)
 	return (uint64_t)(time.tv_sec * 1000 + time.tv_usec / 1000);
 }
 
+static int count = 0;
+
 void * uart_receive_thread(void * arg)
 {
 	uint8_t c = 0;
@@ -6387,7 +6389,10 @@ void * uart_receive_thread(void * arg)
 		while(1)
 		{
 			if((serial_read_byte(fd, &c) == 1) && (c == 0x58))
+			{
+				printf("ack %d\r\n", count++);
 				ack = 1;
+			}
 		}
 	}
 	return 0;
@@ -6529,8 +6534,11 @@ void infree_blit_png(uint8_t * png, int len)
 	serial_sendcmd(CMD_BLIT_PNG, png, len);
 }
 
-extern unsigned char foo_01502_jpg[];
-extern unsigned int foo_01502_jpg_len;
+void infree_reboot_to_fel(void)
+{
+	uint8_t fel[3] = {'F', 'E', 'L'};
+	serial_sendcmd(CMD_REBOOT_TO_FEL, &fel[0], 3);
+}
 
 int main(int argc, char *argv[])
 {
@@ -6551,10 +6559,12 @@ int main(int argc, char *argv[])
 		//infree_clear_screen(0x00, 0x00, 0xff);
 		
 		//infree_clear_screen(0x00, 0x00, 0x00);
-		infree_blit_jpg((uint8_t *)welcom_jpg, sizeof(welcom_jpg));
+		//infree_blit_jpg((uint8_t *)welcom_jpg, sizeof(welcom_jpg));
 		
 		//infree_clear_screen(0x00, 0x00, 0x00);
-		infree_blit_png((uint8_t *)welcom_png, sizeof(welcom_png));
+		//infree_blit_png((uint8_t *)welcom_png, sizeof(welcom_png));
+		
+		infree_reboot_to_fel();
 	}
 	serial_close(fd);
 
