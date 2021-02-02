@@ -2,6 +2,8 @@
 #define  __USB_H__
 
 #include <xboot.h>
+#include <interrupt/interrupt.h>
+#include <f1c100s-irq.h>
 
 #define usbprint printf
 typedef unsigned int u32;

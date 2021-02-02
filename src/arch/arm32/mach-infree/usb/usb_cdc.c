@@ -342,7 +342,7 @@ void set_line_codingstatic_ext(unsigned char * pdata)
 static void usb_get_device_descriptor(USB_DeviceRequest *req_data)
 {
     unsigned int len = req_data->wLength;
-    usbprint("usb_get_device_descriptor\n");
+    usbprint("usb_get_device_descriptor\r\n");
 	if (len < sizeof(USB_DeviceDescriptor))
 	{
 		usb_device_write_data_ep_pack(0, (unsigned char *)&cdc_devDesc, len);
@@ -355,7 +355,7 @@ static void usb_get_device_descriptor(USB_DeviceRequest *req_data)
 
 static void usb_get_cfg_descriptor(USB_DeviceRequest *req_data)
 {
-	usbprint("usb_get_cfg_descriptor\n");
+	usbprint("usb_get_cfg_descriptor\r\n");
 	switch(req_data->wLength)
 	{
 		case 9:
@@ -374,7 +374,7 @@ static inline void udp_get_dev_descriptor_string(USB_DeviceRequest *dreq)
 {
 	int len = dreq->wLength;
 	int index = dreq->wValue & 0xff;
-	usbprint("udp_get_dev_descriptor_string:%d\n",index);
+	usbprint("udp_get_dev_descriptor_string:%d\r\n",index);
 	switch ( index)
 	{
 		case 0:       //land ids
@@ -446,7 +446,7 @@ static void usb_descriptor_request(USB_DeviceRequest* req_data)
 //		case REPORT_DESCRIPTOR ://Hid DISCRIPTOR
 //					usb_get_report_descriptor(req_data);break;
 		default:
-					usbprint("usb get descriptor : 0x%04x not suppost!\n",wValue);
+					usbprint("usb get descriptor : 0x%04x not suppost!\r\n",wValue);
 					usb_device_read_data_status_ep0(1);
 					break;
 	}
@@ -467,7 +467,7 @@ static void set_address(unsigned char addr)
 
 	//usb_device_send_nullpack_ep0();
 //
-    usbprint("set dev address: %x\n", addr);
+    usbprint("set dev address: %x\r\n", addr);
     usb_device_set_ep0_state(EP0_IDLE);
     //usb_device_set_xfer_type(SET_ADDR);
 
@@ -505,25 +505,25 @@ static void standard_setup_request(USB_DeviceRequest *req_data)
     if(bRequest==USB_REQ_GET_DESCRIPTOR)
     {
     	u16 test;
-    	usbprint("getDescriptor\n");
+    	usbprint("getDescriptor\r\n");
     	//GD_USB_Read_Clear_IntrTx(&test);   //clear int
     	usb_descriptor_request(req_data);
     }
     else if(bRequest==USB_REQ_SET_CONFIGURATION)
     {
-    	usbprint("set_configuration\n");
+    	usbprint("set_configuration\r\n");
         set_configuration();
     }
     else if(bRequest==USB_REQ_GET_CONFIGURATION)
     {
-    	usbprint("get_configuration\n");
+    	usbprint("get_configuration\r\n");
         //not support
         usbprint("Error!! unsupprot USB_REQ_GET_CONFIGURATION command");
         usb_device_read_data_status_ep0(1);
     }
     else if(bRequest==USB_REQ_SET_INTERFACE)
     {
-    	usbprint("set_interface\n");
+    	usbprint("set_interface\r\n");
         //not support
         usbprint("Error!! unsupprot USB_REQ_SET_INTERFACE command");
         usb_device_read_data_status_ep0(1);
@@ -537,21 +537,21 @@ static void standard_setup_request(USB_DeviceRequest *req_data)
     }
     else if(bRequest==USB_REQ_SET_ADDRESS)
     {
-    	usbprint("set_addr\n");
+    	usbprint("set_addr\r\n");
 //    	volatile int time_dly = 100000;
 //    	while(time_dly--);//delay wait zero out pack ok
         set_address(req_data->wValue&0x7f);
     }
     else if(bRequest==USB_REQ_SET_DESCRIPTOR)
     {
-    	usbprint("set_Descriptor\n");
+    	usbprint("set_Descriptor\r\n");
         //not support
         usbprint("Error!! unsupprot USB_REQ_SET_DESCRIPTOR command");
         usb_device_read_data_status_ep0(1);
     }
     else if(bRequest==USB_REQ_SYNCH_FRAME)
     {
-    	usbprint("sync frame\n");
+    	usbprint("sync frame\r\n");
         //not support
         usbprint("Error!! unsupprot USB_REQ_SYNCH_FRAME command");
         usb_device_read_data_status_ep0(1);
@@ -559,7 +559,7 @@ static void standard_setup_request(USB_DeviceRequest *req_data)
     else if(bRequest == USB_REQ_CLEAR_FEATURE)
     {
     	int epaddr = req_data->wIndex;
-    	usbprint("clear feature\n");
+    	usbprint("clear feature\r\n");
 		//not support
 		//usbprint("Error!! unsupprot USB_REQ_CLEAR_FEATURE command");
 
@@ -568,8 +568,8 @@ static void standard_setup_request(USB_DeviceRequest *req_data)
     }
     else
     {
-    	usbprint("other  req \n");
-        usbprint("Error!! received controller command:%02X.\n", bRequest);
+    	usbprint("other  req \r\n");
+        usbprint("Error!! received controller command:%02X.\r\n", bRequest);
         usb_device_read_data_status_ep0(1);
         //other command process by controller
     }
@@ -579,23 +579,23 @@ static void class_setup_request(USB_DeviceRequest* req_data)
 {
 	unsigned char bRequest = req_data->bRequest;
 	//u32 des_length,data_tmp[26],data_flag;
-	//usbprint("[GK]Received class_setuptran command\n");
+	//usbprint("[GK]Received class_setuptran command\r\n");
    if(bRequest==HID_REQ_SET_REPORT)//HID Set report
    {
-	   usbprint("HID_REQ_SET_REPORT, host set device_report success!!!\n");
+	   usbprint("HID_REQ_SET_REPORT, host set device_report success!!!\r\n");
    }
    else if(bRequest==HID_REQ_SET_IDLE)
    {
-	   usbprint("HID_REQ_SET_IDLE, host set device_report success!!!\n");
+	   usbprint("HID_REQ_SET_IDLE, host set device_report success!!!\r\n");
    }
    else if(bRequest == 0x20)//set_line_coding
    {
 		//set_line_coding(handle, req_data);
 	   //usb_device_read_data_status_ep0(0);
-	   usbprint("set_line_coding\n");
+	   usbprint("set_line_coding\r\n");
 	   port_line_coding_flag = 1;
 	   int len = USBC_ReadLenFromFifo(1);
-	   usbprint("set_line_coding:readlen:%d\n",len);
+	   usbprint("set_line_coding:readlen:%d\r\n",len);
 	   if(len == 7)
 	   {
 		   unsigned char tmp[7];
@@ -615,13 +615,13 @@ static void class_setup_request(USB_DeviceRequest* req_data)
 		//usb_device_read_data_status_ep0(1);
 		usb_device_write_data_ep_pack(0,(const u8 *)(&port_line_coding),lent);
 		//GD_USB_Set_CSR0L(0x88);
-	   usbprint("get_line_coding\n");
+	   usbprint("get_line_coding\r\n");
 	}
    else if(bRequest == 0x22)//set_control_line_state
 	{
 		//set_control_line_state(handle, req_data);
 		//GD_USB_Set_CSR0L(0x88);
-	   usbprint("set_control_line_state \n");
+	   usbprint("set_control_line_state \r\n");
 	   //usb_device_read_data_status_ep0(1);
 	   usb_device_clear_setup_end();
 		//usb_device_send_nullpack_ep0();
@@ -630,7 +630,7 @@ static void class_setup_request(USB_DeviceRequest* req_data)
 	}
    else
    {
-	   usbprint("Warnning!!! received unsupport command:%08x ,do nothing\n", bRequest);
+	   usbprint("Warnning!!! received unsupport command:%08x ,do nothing\r\n", bRequest);
    }
  }
 void usb_cdc_setup_handle(unsigned char *dat,int len)
@@ -643,11 +643,11 @@ void usb_cdc_setup_handle(unsigned char *dat,int len)
 //		usb_setup_request.wValue = (dat[2]<<8)|dat[3];
 //		usb_setup_request.wIndex = (dat[4]<<8)|dat[5];
 //		usb_setup_request.wLength = (dat[6]<<8)|dat[7];
-		usbprint("bRequestType:0x%02x\n",usb_setup_request.bRequestType);
-		usbprint("bRequest:0x%02x\n",usb_setup_request.bRequest);
-		usbprint("wValue:0x%04x\n",usb_setup_request.wValue);
-		usbprint("wIndex:0x%04x\n",usb_setup_request.wIndex);
-		usbprint("wLength:0x%04x\n",usb_setup_request.wLength);
+		usbprint("bRequestType:0x%02x\r\n",usb_setup_request.bRequestType);
+		usbprint("bRequest:0x%02x\r\n",usb_setup_request.bRequest);
+		usbprint("wValue:0x%04x\r\n",usb_setup_request.wValue);
+		usbprint("wIndex:0x%04x\r\n",usb_setup_request.wIndex);
+		usbprint("wLength:0x%04x\r\n",usb_setup_request.wLength);
 		if((usb_setup_request.bRequestType & USB_TYPE_MASK) == USB_TYPE_STANDARD)
 		{
 			standard_setup_request(&usb_setup_request);
@@ -664,7 +664,7 @@ void usb_cdc_setup_handle(unsigned char *dat,int len)
 	}
 	else
 	{
-		usbprint("not setup data.\n");
+		usbprint("not setup data.\r\n");
 	}
 }
 

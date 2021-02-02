@@ -1,5 +1,4 @@
 #include "usb.h"
-#include "irq_misc.h"
 #include "usb_phy.h"
 #include "usb_dev.h"
 static unsigned char current_usb_type = USB_TYPE_DISCONNECT;
@@ -26,7 +25,7 @@ int usb_device_write_data_ep_pack(int ep,unsigned char * databuf,int len)
 	//USBC_SelectActiveEp(ep);
 	memcpy(usb_tx_buf,databuf,len);
 	usb_tx_buf_len = len;
-	usbprint("CTRL IN LEN : %d\n",usb_tx_buf_len);
+	usbprint("CTRL IN LEN : %d\r\n",usb_tx_buf_len);
 	if(len > ep_max_len[ep])
 	{
 		USBC_WritePacket(USBC_SelectFIFO(ep), ep_max_len[ep], databuf);
@@ -66,7 +65,7 @@ int usb_device_write_data(int ep,unsigned char * databuf,int len)
     int data_pos = 0;
     if(usb_connect)
     {
-        usbprint("usb_device_write_data len:%d",len);
+        //usbprint("usb_device_write_data len:%d",len);
         void * fifo = USBC_SelectFIFO(ep);
         USBC_SelectActiveEp(ep);
         do {
@@ -78,7 +77,7 @@ int usb_device_write_data(int ep,unsigned char * databuf,int len)
             length -= write_len;
             if(Timeout == 0)
             {
-                usbprint("usb_device_write_data Time out!");
+                //usbprint("usb_device_write_data Time out!");
                 return -1;
             }
             Timeout = 10000000;
@@ -87,14 +86,14 @@ int usb_device_write_data(int ep,unsigned char * databuf,int len)
     }
     else
     {
-        usbprint("usb_device_write_data faild! usb not connect!!");
+        //usbprint("usb_device_write_data faild! usb not connect!!");
         return -1;
     }
 }
 
 int usb_device_read_data(int ep,unsigned char * databuf,int len)
 {
-
+	return 0;
 }
 
 void usb_device_clear_setup_end(void)
@@ -168,7 +167,7 @@ static u32 filtrate_irq_misc(u32 irq_misc)
 }
 static void  usbd_start_work(void)
 {
-	usbprint("usbd_start_work\n");
+	usbprint("usbd_start_work\r\n");
 	//enable_irq_udc(); //no use
 	USBC_Dev_ConectSwitch( USBC_DEVICE_SWITCH_ON);
 	//GH_USB_set_DevCtl_W(0x01);
@@ -176,7 +175,7 @@ static void  usbd_start_work(void)
 
 static void  usbd_stop_work(void)
 {
-	usbprint("usbd_stop_work\n");
+	usbprint("usbd_stop_work\r\n");
 	//disable_irq_udc();//no use
 	USBC_Dev_ConectSwitch(USBC_DEVICE_SWITCH_OFF); // default is pulldown
 }
@@ -196,12 +195,12 @@ static void cfg_udc_command(enum sunxi_udc_cmd_e cmd)
 		}
 		break;
 	case SW_UDC_P_RESET :
-		usbprint("ERR: reset is not support\n");
+		usbprint("ERR: reset is not support\r\n");
 		usbd_stop_work();
 		usbd_start_work();
 		break;
 	default:
-		usbprint("ERR: unkown cmd(%d)\n",cmd);
+		usbprint("ERR: unkown cmd(%d)\r\n",cmd);
 		break;
 	}
 
@@ -211,7 +210,7 @@ static void cfg_udc_command(enum sunxi_udc_cmd_e cmd)
 
 static void sunxi_udc_disable(void)
 {
-	usbprint("sunxi_udc_disable\n");
+	usbprint("sunxi_udc_disable\r\n");
 	/* Disable all interrupts */
 	USBC_INT_DisableUsbMiscAll();
 	USBC_INT_DisableEpAll(USBC_EP_TYPE_RX);
@@ -232,14 +231,13 @@ void usb_handle_ep0(void)
 	//printf("usb ep 0 interupt!!\r\n");
 	/* We make the assumption that sunxi_udc_UDC_IN_CSR1_REG equal to
 		 * sunxi_udc_UDC_EP0_CSR_REG when index is zero */
-	int ep0csr;
 	int len;
 	unsigned char databuf[8];
 	USBC_SelectActiveEp(0);
 	/* clear stall status */
 	if (USBC_Dev_IsEpStall(USBC_EP_TYPE_EP0))
 	{
-		usbprint("ERR: ep0 stall\n");
+		usbprint("ERR: ep0 stall\r\n");
 		USBC_Dev_EpClearStall(USBC_EP_TYPE_EP0);
 		usb_ep0_state = EP0_IDLE;
 		return;
@@ -247,13 +245,13 @@ void usb_handle_ep0(void)
 	/* clear setup end */
 	if (USBC_Dev_Ctrl_IsSetupEnd())
 	{
-		usbprint("handle_ep0: ep0 setup end\n");
+		usbprint("handle_ep0: ep0 setup end\r\n");
 		//sunxi_udc_nuke(dev, ep, 0);
 		USBC_Dev_Ctrl_ClearSetupEnd();
 		usb_ep0_state = EP0_IDLE;
 	}
-	usbprint("usb_ep0_state:%d\n",usb_ep0_state);
-	usbprint("ep0csr:0x%02x\n",USBC_Dev_Read_EP0_CSR());
+	usbprint("usb_ep0_state:%d\r\n",usb_ep0_state);
+	usbprint("ep0csr:0x%02x\r\n",USBC_Dev_Read_EP0_CSR());
 	if (USBC_Dev_IsReadDataReady(USBC_EP_TYPE_EP0))//if that is setup data ,turn to idle state
 	{
 		usb_ep0_state = EP0_IDLE;
@@ -264,11 +262,11 @@ void usb_handle_ep0(void)
 			{
 				if (!USBC_Dev_IsReadDataReady(USBC_EP_TYPE_EP0))
 				{
-					usbprint("ERR: data is ready, can not read data.\n");
+					usbprint("ERR: data is ready, can not read data.\r\n");
 					return;
 				}
 				len = USBC_ReadLenFromFifo(USBC_EP_TYPE_EP0);
-				usbprint("ep0 len :%d.\n",len);
+				usbprint("ep0 len :%d.\r\n",len);
 				if(len != 8)
 				{
 					int timeout = 16;
@@ -276,7 +274,7 @@ void usb_handle_ep0(void)
 					{
 						len = USBC_ReadLenFromFifo(USBC_EP_TYPE_EP0);
 					}
-					usbprint("ep0 len wait :%d.\n",len);
+					usbprint("ep0 len wait :%d.\r\n",len);
 				}
 				if(len == 8)
 				{
@@ -304,12 +302,12 @@ void usb_handle_ep0(void)
 					}
 					else
 					{
-						usbprint("ERR: usb class %d not suppost!!!\n",current_usb_type);
+						usbprint("ERR: usb class %d not suppost!!!\r\n",current_usb_type);
 					}
 				}
 				else
 				{
-					usbprint("ERR: data len = %d, not setup data.\n",len);
+					usbprint("ERR: data len = %d, not setup data.\r\n",len);
 					USBC_Dev_ReadDataStatus(USBC_EP_TYPE_EP0, 0);
 					USBC_Dev_EpSendStall( USBC_EP_TYPE_EP0);
 					return;
@@ -319,13 +317,13 @@ void usb_handle_ep0(void)
 			if (!usb_tx_pos)
 			{
 						//sunxi_udc_write_fifo(ep, req);
-				usbprint("in data has sended!\n");
+				usbprint("in data has sended!\r\n");
 				usb_ep0_state = EP0_IDLE;
 			}
 			else
 			{
-				usbprint("in data is not write ok!\n");
-				usbprint("usb_tx_pos : %d\n",usb_tx_pos);
+				usbprint("in data is not write ok!\r\n");
+				usbprint("usb_tx_pos : %d\r\n",usb_tx_pos);
 				if(usb_tx_buf_len - usb_tx_pos > 64)
 				{
 					USBC_WritePacket(USBC_SelectFIFO(0), ep_max_len[0], usb_tx_buf + usb_tx_pos);
@@ -343,15 +341,15 @@ void usb_handle_ep0(void)
 		case EP0_OUT_DATA_PHASE:
 			if (!USBC_Dev_IsReadDataReady(USBC_EP_TYPE_EP0))
 			{
-				usbprint("ep0_out_intr: data is ready, can not read data.\n");
+				usbprint("ep0_out_intr: data is ready, can not read data.\r\n");
 				return;
 			}
 			len = USBC_ReadLenFromFifo(USBC_EP_TYPE_EP0);
-			usbprint("ep0_out_intr len :%d.\n",len);
+			usbprint("ep0_out_intr len :%d.\r\n",len);
 			usb_device_read_data_ep_pack(0,databuf,len);
 			usb_device_read_data_status_ep0(0);
 			usb_ep0_state = EP0_IDLE;
-			usbprint("d[0] :0x%02x    data[1] :0x%02x    data[2] :0x%02x    data[3] :0x%02x    data[4] :0x%02x    data[5] :0x%02x    data[6] :0x%02x    data[7] :0x%02x.\n",
+			usbprint("d[0] :0x%02x    data[1] :0x%02x    data[2] :0x%02x    data[3] :0x%02x    data[4] :0x%02x    data[5] :0x%02x    data[6] :0x%02x    data[7] :0x%02x.\r\n",
 			databuf[0],databuf[1],databuf[2],databuf[3],databuf[4],databuf[5],
 			databuf[6],databuf[7]);
 			break;
@@ -384,19 +382,19 @@ void usb_handle_epn_in(int ep)
 {
 	u32 old_ep_idx;
 	u32 idx = ep;
-	usbprint("USB in ep%d irq\n", ep);
+	//usbprint("USB in ep%d irq\r\n", ep);
 
 	old_ep_idx = USBC_GetActiveEp();
 	USBC_SelectActiveEp(idx);
 
 	if (USBC_Dev_IsEpStall(USBC_EP_TYPE_TX))
 	{
-		usbprint("ERR: tx ep(%d) is stall\n", idx);
+		//usbprint("ERR: tx ep(%d) is stall\r\n", idx);
 		USBC_Dev_EpClearStall(USBC_EP_TYPE_TX);
 	}
 	if (!USBC_Dev_IsWriteDataReady(USBC_EP_TYPE_TX))
 	{
-		usbprint("tx ep(%d) data ready!\n", idx);
+		//usbprint("tx ep(%d) data ready!\r\n", idx);
 		if(current_usb_type == USB_TYPE_USB_HID)
 		{
 			usb_hid_in_ep_callback();
@@ -412,18 +410,18 @@ void usb_handle_epn_out(int ep)
 	u32 old_ep_idx;
 	u32 idx = ep;
 	u32 len;
-	usbprint("USB out ep%d irq\n", ep);
+	//usbprint("USB out ep%d irq\r\n", ep);
 	old_ep_idx = USBC_GetActiveEp();
 	USBC_SelectActiveEp(idx);
 	if (USBC_Dev_IsEpStall(USBC_EP_TYPE_RX))
 	{
-		usbprint("ERR: rx ep(%d) is stall\n", idx);
+		//usbprint("ERR: rx ep(%d) is stall\r\n", idx);
 		USBC_Dev_EpClearStall(USBC_EP_TYPE_RX);
 	}
 	if (USBC_Dev_IsReadDataReady(USBC_EP_TYPE_RX))
 	{
 		len = USBC_ReadLenFromFifo(USBC_EP_TYPE_RX);
-		usbprint("rx ep(%d) data ready Len:%d!\n", idx,len);
+		//usbprint("rx ep(%d) data ready Len:%d!\r\n", idx,len);
 		usb_device_read_data_ep_pack(idx,usb_rx_buf,len);
 		usb_rx_buf_len = len;
 		if(current_usb_type == USB_TYPE_USB_HID)
@@ -435,19 +433,18 @@ void usb_handle_epn_out(int ep)
 			usb_cdc_out_ep_callback(usb_rx_buf,usb_rx_buf_len);
 		}
 		USBC_Dev_ReadDataStatus(USBC_EP_TYPE_RX, 1);
-//		usbprint("rx ep(%d) data ready data[0]:%d!\n", idx,usb_rx_buf[0]);
+//		usbprint("rx ep(%d) data ready data[0]:%d!\r\n", idx,usb_rx_buf[0]);
 //		usb_device_write_data_ep_pack(idx,usb_rx_buf,usb_rx_buf_len);
 
 	}
 	USBC_SelectActiveEp(old_ep_idx);
 }
-void usb_irq_handle(int arg)
+void usb_irq_handle(void * arg)
 {
 		int usb_irq	= 0;
 		int tx_irq	= 0;
 		int rx_irq	= 0;
 		int i		= 0;
-		int dma_irq	= 0;
 		u32 old_ep_idx  = 0;
 	/* Save index */
 		old_ep_idx = USBC_GetActiveEp();
@@ -459,8 +456,8 @@ void usb_irq_handle(int arg)
 		//dma_irq = USBC_Readw(USBC_REG_DMA_INTS(dev->sunxi_udc_io->usb_vbase));
 
 		usb_irq = filtrate_irq_misc(usb_irq);
-		usbprint("_______________________________\n");
-		usbprint("\nirq: usb_irq=%02x, tx_irq=%02x, rx_irq=%02x, dma_irq:%x\n", usb_irq, tx_irq, rx_irq, dma_irq);
+		//usbprint("_______________________________\r\n");
+		//usbprint("\nirq: usb_irq=%02x, tx_irq=%02x, rx_irq=%02x, dma_irq:%x\r\n", usb_irq, tx_irq, rx_irq, dma_irq);
 		//usbprint(">usb addr:0x%02x\n",GH_USB_get_FAddr());
 		//usbprint(">>usb frame:%d\n",GH_USB_get_Frame());
 		//usbprint(">>>Time:%d\n",gkosGetTicks());
@@ -473,7 +470,7 @@ void usb_irq_handle(int arg)
 		/* RESET */
 		if (usb_irq & USBC_INTUSB_RESET)
 		{
-			usbprint("IRQ: reset\n");
+			//usbprint("IRQ: reset\r\n");
 			USBC_INT_ClearMiscPending(USBC_INTUSB_RESET);
 			clear_all_irq();
 			usb_connect = 1;
@@ -486,7 +483,7 @@ void usb_irq_handle(int arg)
 		/* RESUME */
 		if (usb_irq & USBC_INTUSB_RESUME)
 		{
-			usbprint("IRQ: resume\n");
+			//usbprint("IRQ: resume\r\n");
 			/* clear interrupt */
 			USBC_INT_ClearMiscPending(USBC_INTUSB_RESUME);
 		}
@@ -494,7 +491,7 @@ void usb_irq_handle(int arg)
 		/* SUSPEND */
 		if (usb_irq & USBC_INTUSB_SUSPEND)
 		{
-			usbprint("IRQ: suspend\n");
+			//usbprint("IRQ: suspend\r\n");
 
 			/* clear interrupt */
 			USBC_INT_ClearMiscPending(USBC_INTUSB_SUSPEND);
@@ -505,7 +502,7 @@ void usb_irq_handle(int arg)
 		/* DISCONNECT */
 		if (usb_irq & USBC_INTUSB_DISCONNECT)
 		{
-			usbprint("IRQ: disconnect\n");
+			//usbprint("IRQ: disconnect\r\n");
 
 			USBC_INT_ClearMiscPending( USBC_INTUSB_DISCONNECT);
 			usb_ep0_state = EP0_IDLE;
@@ -514,7 +511,7 @@ void usb_irq_handle(int arg)
 //		/* SOF */
 //		if (usb_irq & USBC_INTUSB_SOF)
 //		{
-//			usbprint("IRQ: start of frame intr\n");
+//			usbprint("IRQ: start of frame intr\r\n");
 //			USBC_INT_ClearMiscPending( USBC_INTUSB_SOF);
 //		}
 		/* EP */
@@ -524,7 +521,7 @@ void usb_irq_handle(int arg)
 		 */
 		if (tx_irq & USBC_INTTx_FLAG_EP0)
 		{
-			usbprint("USB ep0 irq\n");
+			//usbprint("USB ep0 irq\r\n");
 			/* Clear the interrupt bit by setting it to 1 */
 			USBC_INT_ClearEpPending(USBC_EP_TYPE_TX, 0);
 			if (current_speed == USB_SPEED_UNKNOWN)
@@ -534,18 +531,18 @@ void usb_irq_handle(int arg)
 							current_speed = USB_SPEED_HIGH;
 							ep_max_len[1] = 512;
 							ep_max_len[2] = 512;
-							usbprint("\n+++++++++++++++++++++++++++++++++++++\n");
-							usbprint(" usb enter high speed.\n");
-							usbprint("\n+++++++++++++++++++++++++++++++++++++\n");
+							//usbprint("\n+++++++++++++++++++++++++++++++++++++\n");
+							//usbprint(" usb enter high speed.\r\n");
+							//usbprint("\n+++++++++++++++++++++++++++++++++++++\n");
 						}
 						else
 						{
 							current_speed = USB_SPEED_FULL;
 							ep_max_len[1] = 64;
 							ep_max_len[2] = 64;
-							usbprint("\n+++++++++++++++++++++++++++++++++++++\n");
-							usbprint(" usb enter full speed.\n");
-							usbprint("\n+++++++++++++++++++++++++++++++++++++\n");
+							//usbprint("\n+++++++++++++++++++++++++++++++++++++\n");
+							//usbprint(" usb enter full speed.\r\n");
+							//usbprint("\n+++++++++++++++++++++++++++++++++++++\n");
 						}
 			}
 
@@ -562,7 +559,7 @@ void usb_irq_handle(int arg)
 			if (rx_irq & tmp)
 			{
 
-				//usbprint("USB rx ep%d irq\n", i);
+				//usbprint("USB rx ep%d irq\r\n", i);
 				/* Clear the interrupt bit by setting it to 1 */
 				USBC_INT_ClearEpPending( USBC_EP_TYPE_RX, i);
 				//sunxi_udc_handle_ep(&dev->ep[ep_fifo_out[i]]);
@@ -577,8 +574,7 @@ void usb_irq_handle(int arg)
 			u32 tmp = 1 << i;
 			if (tx_irq & tmp)
 			{
-
-				//usbprint("USB tx ep%d irq\n", i);
+				//usbprint("USB tx ep%d irq\r\n", i);
 				/* Clear the interrupt bit by setting it to 1 */
 				USBC_INT_ClearEpPending(USBC_EP_TYPE_TX, i);
 				//sunxi_udc_handle_ep(&dev->ep[ep_fifo_in[i]]);
@@ -597,7 +593,7 @@ void usb_config_ep_in(int epidx,int maxpack,int type)
 	u32 old_ep_idx  = 0;
 	if(epidx)
 	{
-		usbprint("config int ep %d:%d , %d",epidx,maxpack,type);
+		//usbprint("config int ep %d:%d , %d",epidx,maxpack,type);
 		/* Save index */
 		old_ep_idx = USBC_GetActiveEp();
 		USBC_SelectActiveEp(epidx);
@@ -615,7 +611,7 @@ void usb_config_ep_out(int epidx,int maxpack,int type)
 	u32 old_ep_idx  = 0;
 	if(epidx)
 	{
-		usbprint("config out ep %d:%d , %d",epidx,maxpack,type);
+		//usbprint("config out ep %d:%d , %d",epidx,maxpack,type);
 		/* Save index */
 		old_ep_idx = USBC_GetActiveEp();
 		USBC_SelectActiveEp(epidx);
@@ -650,12 +646,12 @@ void usb_device_clear_ep_halt(int epaddr)
 
 static void sunxi_udc_enable()
 {
-	usbprint("sunxi_udc_enable called\n");
+	usbprint("sunxi_udc_enable called\r\n");
 
 	/* dev->gadget.speed = USB_SPEED_UNKNOWN; */
 	current_speed = USB_SPEED_UNKNOWN;
 
-	usbprint("CONFIG_USB_GADGET_DUALSPEED: USBC_TS_MODE_HS\n");
+	usbprint("CONFIG_USB_GADGET_DUALSPEED: USBC_TS_MODE_HS\r\n");
 
 	USBC_Dev_ConfigTransferMode(USBC_TS_TYPE_BULK, USBC_TS_MODE_HS);
 
@@ -674,30 +670,30 @@ static void sunxi_udc_enable()
 }
 int usb_device_init(unsigned char type)
 {
-	int		   	retval  = 0;
+	int retval  = 0;
 	if(current_usb_type != type)
 	{
-		usbprint("sunxi_usb_device_enable start\n");
+		usbprint("sunxi_usb_device_enable start\r\n");
 		current_usb_type = type;
 		retval = usb_dev_bsp_init();
 		if (retval != 0)
 		{
-			usbprint("ERR: sunxi_udc_bsp_init failed\n");
+			usbprint("ERR: sunxi_udc_bsp_init failed\r\n");
 			return -1;
 		}
 		//usbhid_usb_phy_init(41);
 		sunxi_udc_disable();
 	//	GD_USB_Intr_Set_CallBack(usb_irq_handle);
-		retval = request_irq(IRQ_USBOTG, usb_irq_handle,0);
+		retval = request_irq(F1C100S_IRQ_USBOTG, usb_irq_handle, IRQ_TYPE_NONE, NULL);
 		if (retval != 0)
 		{
-			usbprint("ERR: cannot get irq %i, err %d\n", IRQ_USBOTG, retval);
+			usbprint("ERR: cannot get irq %i, err %d\r\n", F1C100S_IRQ_USBOTG, retval);
 			retval = -1;
 			//goto err;
 		}
 		sunxi_udc_enable();
 		//cfg_udc_command(SW_UDC_P_ENABLE);
-		usbprint("sunxi_usb_device_enable end\n");
+		usbprint("sunxi_usb_device_enable end\r\n");
 
 		return retval;
 	}
