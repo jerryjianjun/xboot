@@ -6502,12 +6502,18 @@ void serial_sendcmd(uint8_t cmd, uint8_t * dat, int len)
 	uart_wait_ack();
 }
 
-#define CMD_CLEAR_SCREEN	(0x01)
-#define CMD_BLIT_JPG		(0x02)
-#define CMD_BLIT_PNG		(0x03)
-#define CMD_BLIT_FEL		(0xfe)
+#define CMD_SET_BRIGHTNESS	(0x01)
+#define CMD_CLEAR_SCREEN	(0x02)
+#define CMD_BLIT_JPG		(0x03)
+#define CMD_BLIT_PNG		(0x04)
+#define CMD_REBOOT_TO_FEL	(0xfe)
 
-void infree_clearscreen(uint8_t r, uint8_t g, uint8_t b)
+void infree_set_brightness(uint8_t brightness)
+{
+	serial_sendcmd(CMD_SET_BRIGHTNESS, &brightness, 1);
+}
+
+void infree_clear_screen(uint8_t r, uint8_t g, uint8_t b)
 {
 	uint8_t rgb[3] = {r, g, b};
 	serial_sendcmd(CMD_CLEAR_SCREEN, &rgb[0], 3);
@@ -6540,14 +6546,14 @@ int main(int argc, char *argv[])
 	pthread_create(&thread, NULL, uart_receive_thread,NULL);
 	while(1)
 	{
-		//infree_clearscreen(0xff, 0x00, 0x00);
-		//infree_clearscreen(0x00, 0xff, 0x00);
-		//infree_clearscreen(0x00, 0x00, 0xff);
+		//infree_clear_screen(0xff, 0x00, 0x00);
+		//infree_clear_screen(0x00, 0xff, 0x00);
+		//infree_clear_screen(0x00, 0x00, 0xff);
 		
-		//infree_clearscreen(0x00, 0x00, 0x00);
+		//infree_clear_screen(0x00, 0x00, 0x00);
 		infree_blit_jpg((uint8_t *)welcom_jpg, sizeof(welcom_jpg));
 		
-		//infree_clearscreen(0x00, 0x00, 0x00);
+		//infree_clear_screen(0x00, 0x00, 0x00);
 		infree_blit_png((uint8_t *)welcom_png, sizeof(welcom_png));
 	}
 	serial_close(fd);

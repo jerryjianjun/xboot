@@ -328,10 +328,11 @@ enum com_state_t {
 	COM_STATE_CRC		= 7,
 };
 
-#define CMD_CLEAR_SCREEN	(0x01)
-#define CMD_BLIT_JPG		(0x02)
-#define CMD_BLIT_PNG		(0x03)
-#define CMD_BLIT_FEL		(0xfe)
+#define CMD_SET_BRIGHTNESS	(0x01)
+#define CMD_CLEAR_SCREEN	(0x02)
+#define CMD_BLIT_JPG		(0x03)
+#define CMD_BLIT_PNG		(0x04)
+#define CMD_REBOOT_TO_FEL	(0xfe)
 
 static struct framebuffer_t * fb = NULL;
 static struct surface_t * screen = NULL;
@@ -453,6 +454,10 @@ void usb_task(struct task_t * task, void * data)
 				{
 					switch(tmp[0])
 					{
+					case CMD_SET_BRIGHTNESS:
+						framebuffer_set_backlight(fb, (int)tmp[1] * 1000 / 255);
+						break;
+
 					case CMD_CLEAR_SCREEN:
 						{
 							struct color_t col;
@@ -493,7 +498,7 @@ void usb_task(struct task_t * task, void * data)
 						}
 						break;
 
-					case CMD_BLIT_FEL:
+					case CMD_REBOOT_TO_FEL:
 						break;
 
 					default:
