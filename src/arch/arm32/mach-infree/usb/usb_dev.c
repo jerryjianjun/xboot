@@ -14,10 +14,10 @@ enum sunxi_udc_cmd_e {
 	SW_UDC_P_RESET	= 3,		/* UDC reset, in case of */
 };
 static int ep_max_len[3] = {64,512,512};
-unsigned char usb_tx_buf[512];
+unsigned char usb_tx_buf[SZ_512];
 int usb_tx_buf_len = 0;
 int usb_tx_pos = 0;
-unsigned char usb_rx_buf[512];
+unsigned char usb_rx_buf[SZ_512];
 int usb_rx_buf_len = 0;
 int usb_rx_pos = 0;
 int usb_device_write_data_ep_pack(int ep,unsigned char * databuf,int len)
@@ -405,6 +405,7 @@ void usb_handle_epn_in(int ep)
 	USBC_SelectActiveEp(old_ep_idx);
 }
 
+extern void com_receive(uint8_t c);
 void usb_handle_epn_out(int ep)
 {
 	u32 old_ep_idx;
@@ -430,7 +431,9 @@ void usb_handle_epn_out(int ep)
 		}
 		else if(current_usb_type == USB_TYPE_USB_COM)
 		{
-			usb_cdc_out_ep_callback(usb_rx_buf,usb_rx_buf_len);
+			for(int i = 0; i < usb_rx_buf_len; i++)
+				com_receive(usb_rx_buf[i]);
+			//usb_cdc_out_ep_callback(usb_rx_buf,usb_rx_buf_len);
 		}
 		USBC_Dev_ReadDataStatus(USBC_EP_TYPE_RX, 1);
 //		usbprint("rx ep(%d) data ready data[0]:%d!\r\n", idx,usb_rx_buf[0]);

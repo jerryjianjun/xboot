@@ -6,13 +6,13 @@ STACK_UND_SIZE = 0x10000;
 STACK_ABT_SIZE = 0x10000;
 STACK_IRQ_SIZE = 0x10000;
 STACK_FIQ_SIZE = 0x10000;
-STACK_SRV_SIZE = 0x40000;
+STACK_SRV_SIZE = 0x100000;
 
 MEMORY
 {
 	ram  : org = 0x80000000, len = 8M
-	dma  : org = 0x80800000, len = 8M
-	heap : org = 0x81000000, len = 16M
+	dma  : org = 0x80000000, len = 0M
+	heap : org = 0x80800000, len = 24M
 }
 
 SECTIONS
