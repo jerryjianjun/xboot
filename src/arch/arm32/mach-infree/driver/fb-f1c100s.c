@@ -246,16 +246,11 @@ static inline void fb_f1c100s_cfg_gpios(int base, int n, int cfg, enum gpio_pull
 
 static inline void fb_f1c100s_init(struct fb_f1c100s_pdata_t * pdat)
 {
-	/* AVDD */
-	gpio_direction_output(F1C100S_GPIOE4, 1);
-
 	fb_f1c100s_cfg_gpios(F1C100S_GPIOD0, 22, 0x2, GPIO_PULL_NONE, GPIO_DRV_STRONG);
 	f1c100s_tcon_disable(pdat);
 	f1c100s_debe_set_mode(pdat);
 	f1c100s_tcon_set_mode(pdat);
 	f1c100s_tcon_enable(pdat);
-
-	mdelay(700);
 }
 
 static void fb_setbl(struct framebuffer_t * fb, int brightness)

@@ -364,17 +364,6 @@
 		"cd-gpio-config": -1
 	},
 
-	"regulator-gpio@0": {
-		"parent": null,
-		"name": "lcd-bl-enable",
-		"voltage": 3300000,
-		"gpio": 131,
-		"active-low": false,
-		"default": {
-			"enable": false
-		}
-	},
-
 	"blk-spinor@0": {
 		"spi-bus": "spi-f1c100s.0",
 		"chip-select": 0,
@@ -432,7 +421,7 @@
 
 	"led-pwm-bl@0": {
 		"pwm-name": "pwm-f1c100s.1",
-		"regulator-name": "lcd-bl-enable",
+		"regulator-name": null,
 		"pwm-period-ns": 1000000,
 		"pwm-polarity": true,
 		"pwm-percent-from": 6,

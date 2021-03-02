@@ -64,6 +64,7 @@ void do_show_logo(void)
 						brightness = strtol(setting_get(key, "-1"), NULL, 0);
 						if(brightness <= 0)
 							brightness = (1000 * 633) >> 10;
+						mdelay(50);
 						framebuffer_set_backlight(fb, brightness);
 					}
 				}

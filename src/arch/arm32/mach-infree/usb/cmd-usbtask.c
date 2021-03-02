@@ -528,6 +528,7 @@ void usb_task(struct task_t * task, void * data)
 
 	if(!usbtask_show_logo())
 		do_show_logo();
+	mdelay(50);
 	framebuffer_set_backlight(fb, (1000 * 633) >> 10);
 
 	while(1)
