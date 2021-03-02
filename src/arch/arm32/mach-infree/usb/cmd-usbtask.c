@@ -341,6 +341,7 @@ enum com_state_t {
 #define CMD_CLEAR_SCREEN	(0x02)
 #define CMD_BLIT_JPG		(0x03)
 #define CMD_BLIT_PNG		(0x04)
+#define CMD_REBOOT			(0x05)
 #define CMD_REBOOT_TO_FEL	(0xfe)
 
 static struct framebuffer_t * fb = NULL;
@@ -609,6 +610,17 @@ void usb_task(struct task_t * task, void * data)
 								__saving.dirty = 1;
 								timer_start_now(&__saving.timer, ms_to_ktime(10000));
 								spin_unlock_irqrestore(&__saving.lock, flags);
+							}
+						}
+						break;
+
+					case CMD_REBOOT:
+						{
+							if((tmp[1] == 'R') && (tmp[2] == 'S') && (tmp[3] == 'T'))
+							{
+								com_ack();
+								machine_reboot();
+								mdelay(4000);
 							}
 						}
 						break;

@@ -6511,6 +6511,7 @@ void serial_sendcmd(uint8_t cmd, uint8_t * dat, int len)
 #define CMD_CLEAR_SCREEN	(0x02)
 #define CMD_BLIT_JPG		(0x03)
 #define CMD_BLIT_PNG		(0x04)
+#define CMD_REBOOT		(0x05)
 #define CMD_REBOOT_TO_FEL	(0xfe)
 
 void infree_set_brightness(uint8_t brightness)
@@ -6532,6 +6533,12 @@ void infree_blit_jpg(uint8_t * jpg, int len)
 void infree_blit_png(uint8_t * png, int len)
 {
 	serial_sendcmd(CMD_BLIT_PNG, png, len);
+}
+
+void infree_reboot(void)
+{
+	uint8_t rst[3] = {'R', 'S', 'T'};
+	serial_sendcmd(CMD_REBOOT, &rst[0], 3);
 }
 
 void infree_reboot_to_fel(void)
