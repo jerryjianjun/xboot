@@ -93,6 +93,7 @@ void to_buffer32(uint32_t val, uint8_t * buf)
 #define CMD_CLEAR_SCREEN	(0x02)
 #define CMD_BLIT_JPG		(0x03)
 #define CMD_BLIT_PNG		(0x04)
+#define CMD_REBOOT			(0x05)
 #define CMD_REBOOT_TO_FEL	(0xfe)
 ```
 
@@ -101,6 +102,7 @@ void to_buffer32(uint32_t val, uint8_t * buf)
 | CMD_CLEAR_SCREEN   | 清除屏幕至某个颜色，三个字节RGB，（R，G，B）    |
 | CMD_BLIT_JPG       | 显示jpg图片                                     |
 | CMD_BLIT_PNG       | 显示png图片                                     |
+| CMD_REBOOT         | 系统重启                                        |
 | CMD_REBOOT_TO_FEL  | 清除flash固件，重新烧录，注意，这条命令谨慎使用 |
 
 
@@ -228,6 +230,18 @@ void infree_blit_png(uint8_t * png, int len)
 	serial_sendcmd(CMD_BLIT_PNG, png, len);
 }
 
+
+
+```
+
+## 系统重启
+
+```c
+void infree_reboot(void)
+{
+	uint8_t rst[3] = {'R', 'S', 'T'};
+	serial_sendcmd(CMD_REBOOT, &rst[0], 3);
+}
 
 
 ```
