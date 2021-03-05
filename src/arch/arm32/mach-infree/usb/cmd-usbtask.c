@@ -444,6 +444,8 @@ struct saving_t {
 };
 static struct saving_t __saving = { 0 };
 
+uint8_t backlight_brightness = 0x9e;
+
 static int usbtask_show_logo(void)
 {
 	struct block_t * blk = search_block("blk-spinor.0");
@@ -455,11 +457,15 @@ static int usbtask_show_logo(void)
 		{
 			if(__saving.buf[0] == 0x58)
 			{
+				backlight_brightness = __saving.buf[1];
+				if(backlight_brightness <= 0)
+					backlight_brightness = 1;
+
 				len = to_value32(&__saving.buf[4]);
 				if(len > 0 && len < SZ_2M)
 				{
 					block_read(blk, (u8_t *)&__saving.buf[8], 0x00400000 + 8, len);
-					if((__saving.buf[1] == 'J') && (__saving.buf[2] == 'P') && (__saving.buf[3] == 'G'))
+					if((__saving.buf[2] == 'J') && (__saving.buf[3] == 'P'))
 					{
 						struct surface_t * jpg = surface_alloc_from_buffer_jpg(&__saving.buf[8], len);
 						if(jpg)
@@ -473,7 +479,7 @@ static int usbtask_show_logo(void)
 							return 1;
 						}
 					}
-					else if((__saving.buf[1] == 'P') && (__saving.buf[2] == 'N') && (__saving.buf[3] == 'G'))
+					else if((__saving.buf[2] == 'P') && (__saving.buf[3] == 'N'))
 					{
 						struct surface_t * png = surface_alloc_from_buffer_png(&__saving.buf[8], len);
 						if(png)
@@ -530,7 +536,7 @@ void usb_task(struct task_t * task, void * data)
 	if(!usbtask_show_logo())
 		do_show_logo();
 	mdelay(50);
-	framebuffer_set_backlight(fb, (1000 * 633) >> 10);
+	framebuffer_set_backlight(fb, (int)backlight_brightness * 1000 / 255);
 
 	while(1)
 	{
@@ -545,7 +551,15 @@ void usb_task(struct task_t * task, void * data)
 					{
 					case CMD_SET_BRIGHTNESS:
 						{
-							framebuffer_set_backlight(fb, (int)tmp[1] * 1000 / 255);
+							backlight_brightness = tmp[1] > 0 ? tmp[1] : 1;
+							__saving.buf[0] = 0x58;
+							__saving.buf[1] = backlight_brightness;
+							spin_lock_irqsave(&__saving.lock, flags);
+							__saving.dirty = 1;
+							timer_start_now(&__saving.timer, ms_to_ktime(10000));
+							spin_unlock_irqrestore(&__saving.lock, flags);
+
+							framebuffer_set_backlight(fb, (int)backlight_brightness * 1000 / 255);
 							com_ack();
 						}
 						break;
@@ -574,9 +588,9 @@ void usb_task(struct task_t * task, void * data)
 								com_ack();
 
 								__saving.buf[0] = 0x58;
-								__saving.buf[1] = 'J';
-								__saving.buf[2] = 'P';
-								__saving.buf[3] = 'G';
+								__saving.buf[1] = backlight_brightness;
+								__saving.buf[2] = 'J';
+								__saving.buf[3] = 'P';
 								to_buffer32(len - 2, &__saving.buf[4]);
 								memcpy(&__saving.buf[8], &tmp[1], len - 2);
 								spin_lock_irqsave(&__saving.lock, flags);
@@ -601,9 +615,9 @@ void usb_task(struct task_t * task, void * data)
 								com_ack();
 
 								__saving.buf[0] = 0x58;
-								__saving.buf[1] = 'P';
-								__saving.buf[2] = 'N';
-								__saving.buf[3] = 'G';
+								__saving.buf[1] = backlight_brightness;
+								__saving.buf[2] = 'P';
+								__saving.buf[3] = 'N';
 								to_buffer32(len - 2, &__saving.buf[4]);
 								memcpy(&__saving.buf[8], &tmp[1], len - 2);
 								spin_lock_irqsave(&__saving.lock, flags);

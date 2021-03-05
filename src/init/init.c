@@ -29,6 +29,8 @@
 #include <xboot.h>
 #include <init.h>
 
+extern uint8_t backlight_brightness;
+
 void do_show_logo(void)
 {
 	struct device_t * pos, * n;
@@ -38,7 +40,6 @@ void do_show_logo(void)
 	struct matrix_t m;
 	struct color_t c;
 	char key[256];
-	int brightness;
 
 	if(!list_empty_careful(&__device_head[DEVICE_TYPE_FRAMEBUFFER]))
 	{
@@ -61,11 +62,8 @@ void do_show_logo(void)
 						framebuffer_present_surface(fb, s, NULL);
 						framebuffer_destroy_surface(fb, s);
 						sprintf(key, "backlight(%s)", fb->name);
-						brightness = strtol(setting_get(key, "-1"), NULL, 0);
-						if(brightness <= 0)
-							brightness = (1000 * 633) >> 10;
 						mdelay(50);
-						framebuffer_set_backlight(fb, brightness);
+						framebuffer_set_backlight(fb, (int)backlight_brightness * 1000 / 255);
 					}
 				}
 				surface_free(logo);
